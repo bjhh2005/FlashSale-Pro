@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlashSale-Pro | 动静分离 Demo</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>FlashSale-Pro</h1>
+        <p class="sub">动静分离：静态页面由 Nginx 提供，API 通过 <code>/api</code> 反代到后端。</p>
+      </header>
+
+      <section class="card">
+        <h2>注册 / 登录</h2>
+        <div class="form">
+          <label class="field">
+            <span>用户名</span>
+            <input id="username" autocomplete="username" placeholder="shangsan" />
+          </label>
+          <label class="field">
+            <span>密码</span>
+            <input id="password" type="password" autocomplete="current-password" placeholder="my_password_123" />
+          </label>
+          <div class="actions">
+            <button id="btnRegister" type="button">注册</button>
+            <button id="btnLogin" type="button" class="primary">登录</button>
+          </div>
+        </div>
+        <pre id="output" class="output" aria-live="polite"></pre>
+      </section>
+
+      <footer class="footer">
+        <span>后端默认：<code>http://localhost:8080</code></span>
+        <span>Nginx：<code>http://localhost</code></span>
+      </footer>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
