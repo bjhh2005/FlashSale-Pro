@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/flash-sale")
+@RequestMapping("/api/flash-sale")
 public class FlashSaleQueryController {
 
     @Autowired
