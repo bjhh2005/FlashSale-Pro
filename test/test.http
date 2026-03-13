@@ -1,0 +1,17 @@
+### 测试 1：注册新用户
+POST http://localhost:8080/user/register
+Content-Type: application/json
+
+{
+    "username": "shangsan",
+    "password": "my_password_123"
+}
+
+### 测试 2：登录刚才注册的用户
+POST http://localhost:8080/user/login
+Content-Type: application/json
+
+{
+    "username": "shangsan",
+    "password": "my_password_123"
+}

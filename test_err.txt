@@ -1,0 +1,14 @@
+Get-Content : 找不到路径“D:\Repositories\FlashSale-Pro\.mv
+n\wrapper\maven-wrapper.properties”，因为该路径不存在。
+所在位置 行:54 字符: 21
++ ... utionUrl = (Get-Content -Raw "$scriptDir/.mvn/wrapper
+/maven-wrapper.p ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (D:\Reposito 
+   ries...pper.properties:String) [Get-Content], ItemNotF  
+  oundException
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.Power 
+   Shell.Commands.GetContentCommand
+ 
+Cannot start maven from wrapper  
