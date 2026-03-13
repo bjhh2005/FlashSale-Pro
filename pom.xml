@@ -31,6 +31,13 @@
 	</properties>
 	<dependencies>
 
+		<!-- 通用测试依赖（JUnit5、AssertJ、Mockito 等） -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>

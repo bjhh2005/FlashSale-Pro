@@ -1,6 +1,6 @@
 ## FlashSale-Pro
 
-这是《分布式软件原理与技术》课程的小作业项目，用来演示 **动静分离 + Nginx 反向代理 + Spring Boot + PostgreSQL + Docker Compose** 的基础架构。
+这是《分布式软件原理与技术》课程的小作业项目，用来演示 **动静分离 + Nginx 反向代理 + Spring Boot + PostgreSQL + Docker Compose** 的基础架构，并在此基础上实现一个简化版的 **商品秒杀系统（Flash Sale）**。
 
 ---
 
@@ -15,6 +15,8 @@
 3. **Spring Boot 后端**
    - 提供用户注册 / 登录接口
    - 通过 MyBatis 访问 PostgreSQL 数据库
+   - 提供商品、秒杀活动、活动商品的后台管理接口
+   - 提供面向用户的秒杀活动查询、秒杀下单与模拟支付接口
 4. **PostgreSQL 容器**
    - 存储用户数据（`user` 表）
 5. **Redis 容器（预留）**
@@ -59,6 +61,42 @@
 
 - `src/main/java/com/flashsale/flashsale_pro/common/Result.java`  
   统一返回结果封装类，包含 `code`、`message`、`data`，并提供 `success`、`error` 等静态方法。
+
+- `src/main/java/com/flashsale/flashsale_pro/entity/Product.java`  
+  商品实体类，对应 `product` 表。
+
+- `src/main/java/com/flashsale/flashsale_pro/entity/FlashSaleEvent.java`  
+  秒杀活动实体类，对应 `flash_sale_event` 表。
+
+- `src/main/java/com/flashsale/flashsale_pro/entity/FlashSaleItem.java`  
+  活动商品配置实体类，对应 `flash_sale_item` 表，包含秒杀价、总库存、可用库存、已售数量、单用户限购等字段。
+
+- `src/main/java/com/flashsale/flashsale_pro/entity/FlashSaleOrder.java`  
+  秒杀订单实体类，对应 `flash_sale_order` 表，包含订单状态（待支付、已支付等）与金额等信息。
+
+- `src/main/java/com/flashsale/flashsale_pro/mapper/*.java`  
+  使用 MyBatis 的 Mapper 接口，包含用户、商品、活动、活动商品与订单的数据库访问。
+
+- `src/main/java/com/flashsale/flashsale_pro/service/*`  
+  用户、商品、秒杀活动、活动商品与订单等业务服务接口与实现。
+
+- `src/main/java/com/flashsale/flashsale_pro/controller/UserController.java`  
+  用户登录 / 注册接口。
+
+- `src/main/java/com/flashsale/flashsale_pro/controller/AdminProductController.java`  
+  商品管理后台接口：新增 / 修改 / 删除 / 查询商品。
+
+- `src/main/java/com/flashsale/flashsale_pro/controller/AdminFlashSaleEventController.java`  
+  秒杀活动管理后台接口：创建 / 修改 / 删除 / 查询活动。
+
+- `src/main/java/com/flashsale/flashsale_pro/controller/AdminFlashSaleItemController.java`  
+  活动商品管理后台接口：为活动配置商品、设置秒杀价格和库存等。
+
+- `src/main/java/com/flashsale/flashsale_pro/controller/FlashSaleQueryController.java`  
+  面向用户的秒杀活动与商品查询接口。
+
+- `src/main/java/com/flashsale/flashsale_pro/controller/FlashSaleOrderController.java`  
+  面向用户的秒杀下单、查询订单和模拟支付接口。
 
 - `src/main/resources/application.properties`  
   应用配置：
@@ -137,6 +175,8 @@
 
 - `docs/开发日志-阶段01.md`、`docs/开发日志-阶段02.md`  
   开发过程记录，方便回顾项目演进过程。
+- `docs/开发日志-阶段03.md`  
+  描述从“只支持用户注册/登录”演进到“具备完整商品 / 活动 / 活动商品 / 订单模型 + 基础限流 + 前端活动查询”的阶段性成果。
 
 - `README.md`  
   项目总览与说明文档（本文件）。
@@ -145,6 +185,12 @@
   Git 相关配置。
 
 ---
+
+### 三之前：当前阶段性成果速览
+
+- **业务模型**：在最初仅有 `user` 表的基础上，新增了 `product`、`flash_sale_event`、`flash_sale_item`、`flash_sale_order` 等核心表，并在后端补齐对应的 Entity / Mapper / Service / Controller，形成从后台配置到用户下单的完整链路。
+- **架构形态**：前端静态页由 Nginx 托管，通过 `/api/*` 访问 Spring Boot 后端；后端使用 Spring Boot + MyBatis + PostgreSQL 实现用户、商品、秒杀活动、活动商品与订单等模块；Redis 已在 Docker Compose 中预留，为后续 Token、缓存与高并发优化做准备。
+- **工程能力**：引入简单的应用层限流组件 `RateLimiterService` 并配套单元测试，配合现有 Service 测试，目前可通过全局 Maven 或 Maven Wrapper 一键执行 `mvn test`，确保 25 个测试用例全部通过。
 
 ### 三、运行方式（详细）
 

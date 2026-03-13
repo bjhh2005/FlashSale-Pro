@@ -9,6 +9,12 @@ function setOutput(obj) {
   output.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
 }
 
+function setFlashSaleOutput(obj) {
+  const output = document.getElementById("flashSaleOutput");
+  if (!output) return;
+  output.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
+}
+
 async function postJson(path, payload) {
   const res = await fetch(path, {
     method: "POST",
@@ -51,6 +57,23 @@ async function login() {
   setOutput(result);
 }
 
+async function loadFlashSaleEvents() {
+  setFlashSaleOutput("请求中…");
+  try {
+    const res = await fetch("/api/flash-sale/events");
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { raw: text };
+    }
+    setFlashSaleOutput({ status: res.status, ok: res.ok, data });
+  } catch (e) {
+    setFlashSaleOutput(String(e));
+  }
+}
+
 function initDefaults() {
   const u = document.getElementById("username");
   const p = document.getElementById("password");
@@ -61,6 +84,7 @@ function initDefaults() {
 function wire() {
   document.getElementById("btnRegister")?.addEventListener("click", register);
   document.getElementById("btnLogin")?.addEventListener("click", login);
+  document.getElementById("btnLoadEvents")?.addEventListener("click", loadFlashSaleEvents);
 }
 
 initDefaults();
