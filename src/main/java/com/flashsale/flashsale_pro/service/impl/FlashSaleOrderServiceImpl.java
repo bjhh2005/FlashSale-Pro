@@ -7,6 +7,8 @@ import com.flashsale.flashsale_pro.mq.SeckillOrderMessage;
 import com.flashsale.flashsale_pro.mapper.FlashSaleItemMapper;
 import com.flashsale.flashsale_pro.mapper.FlashSaleOrderMapper;
 import com.flashsale.flashsale_pro.service.FlashSaleOrderService;
+import com.flashsale.order.feign.InternalItemClient;
+import com.flashsale.order.feign.InternalItemResponse;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +41,12 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
+
+    @Autowired(required = false)
+    private InternalItemClient internalItemClient;
+
+    @Value("${internal.api.token:phase_c_internal_token}")
+    private String internalApiToken;
 
     @Value("${flashsale.seckill.stock-key-prefix:seckill:stock:}")
     private String stockKeyPrefix;
@@ -74,7 +82,7 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
             return existing;
         }
 
-        FlashSaleItem item = flashSaleItemMapper.findById(itemId);
+        FlashSaleItem item = loadItemForOrder(itemId);
         if (item == null) {
             throw new IllegalArgumentException("秒杀商品不存在");
         }
@@ -172,7 +180,7 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
             return;
         }
 
-        FlashSaleItem item = flashSaleItemMapper.findById(itemId);
+        FlashSaleItem item = loadItemForOrder(itemId);
         if (item == null) {
             rollbackRedisReservation(userId, itemId, quantity);
             putResult(userId, itemId, "FAILED:秒杀商品不存在");
@@ -229,7 +237,7 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
         if (Boolean.TRUE.equals(exists)) {
             return;
         }
-        FlashSaleItem item = flashSaleItemMapper.findById(itemId);
+        FlashSaleItem item = loadItemForOrder(itemId);
         if (item == null) {
             throw new IllegalArgumentException("秒杀商品不存在");
         }
@@ -284,6 +292,26 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
 
     private String resultKey(Long userId, Long itemId) {
         return resultKeyPrefix + userId + ":" + itemId;
+    }
+
+    private FlashSaleItem loadItemForOrder(Long itemId) {
+        if (internalItemClient != null) {
+            try {
+                InternalItemResponse remote = internalItemClient.getItem(itemId, internalApiToken);
+                if (remote != null) {
+                    FlashSaleItem item = new FlashSaleItem();
+                    item.setId(remote.getId());
+                    item.setEventId(remote.getEventId());
+                    item.setProductId(remote.getProductId());
+                    item.setFlashPrice(remote.getFlashPrice());
+                    item.setAvailableStock(remote.getAvailableStock());
+                    return item;
+                }
+            } catch (Exception ignored) {
+                // feign 失败时回退本地 mapper，保持 Phase A 行为稳定
+            }
+        }
+        return flashSaleItemMapper.findById(itemId);
     }
 }
 

@@ -370,6 +370,31 @@ Phase C（2周）：从单体到“伪微服务”拆分
 服务间调用先用 OpenFeign（或 REST client）
 验收标准：至少 2 个业务服务可独立启动，核心流程可跨服务跑通。
 
+#### 1. 当前落地结果（Phase C）
+
+- 根工程已调整为 Maven 父工程（`packaging=pom`），子模块：
+  - `flashsale-common`
+  - `flashsale-stock`
+  - `flashsale-goods-app`（端口 `8081`）
+  - `flashsale-order-app`（端口 `8082`）
+  - `gateway`（端口 `9080`）
+- 网关按路径分流：
+  - `/api/flash-sale/order/** -> order(8082)`
+  - `/api/** -> goods(8081)`
+- `order` 服务新增 OpenFeign 客户端，调用 `goods` 的内部接口 `/internal/items/{itemId}` 做商品读取（失败时回退本地 mapper 读取，保持旧链路稳定）。
+
+#### 2. 本地启动顺序（Phase C）
+
+1) 启基础设施（PostgreSQL / Redis / RabbitMQ / Nginx）
+2) 启 goods：
+   - `mvn -pl flashsale-goods-app spring-boot:run`
+3) 启 order：
+   - `mvn -pl flashsale-order-app spring-boot:run`
+4) 启 gateway：
+   - `mvn -pl gateway spring-boot:run`
+
+建议通过 `http://localhost/api/**` 统一访问（Nginx -> Gateway -> goods/order）。
+
 Phase D（1-2周）：缓存与可用性增强
 目标：补齐老师项目在工程化上的“亮点项”。
 
