@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/flash-sale/order")
@@ -50,7 +51,7 @@ public class FlashSaleOrderController {
     }
 
     @PostMapping
-    public Result<FlashSaleOrder> create(@RequestBody CreateOrderRequest request) {
+    public Result<Map<String, Object>> create(@RequestBody CreateOrderRequest request) {
         // 简单限流：同一用户对同一商品在 5 秒内最多请求 3 次
         String key = "flash_sale:" + request.getUserId() + ":" + request.getItemId();
         boolean allowed = rateLimiterService.tryAcquire(key, 3, 5);
@@ -58,12 +59,20 @@ public class FlashSaleOrderController {
             return Result.error(429, "请求过于频繁，请稍后再试");
         }
 
-        FlashSaleOrder order = flashSaleOrderService.createOrder(
+        Map<String, Object> result = flashSaleOrderService.submitSeckill(
                 request.getUserId(),
                 request.getItemId(),
                 request.getQuantity()
         );
-        return Result.success(order);
+        return Result.success(result);
+    }
+
+    @GetMapping("/result")
+    public Result<Map<String, Object>> queryResult(
+            @RequestParam Long userId,
+            @RequestParam Long itemId
+    ) {
+        return Result.success(flashSaleOrderService.querySeckillResult(userId, itemId));
     }
 
     @GetMapping("/user/{userId}")

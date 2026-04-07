@@ -301,3 +301,68 @@ mvn spring-boot:run
 - 引入 JWT 做更规范的认证与授权；
 - 在 Nginx 中配置静态资源缓存、Gzip 压缩等性能优化；
 - 新增商品、订单、秒杀等业务模块，逐步演进成一个完整的秒杀系统 Demo。
+
+---
+
+### 五、Phase A 并发核心改造成果
+
+本阶段已在单体内完成以下改造：
+
+- Redis + Lua 原子预扣库存，防止超卖与重复抢购；
+- RabbitMQ 异步下单，接口快速返回 `QUEUING`，削峰填谷；
+- 订单层幂等兜底：数据库唯一键 `uq_user_item` + 消费端冲突回收；
+- 新增秒杀结果轮询接口：`GET /flash-sale/order/result?userId=&itemId=`；
+- 新增压测脚本与验收模板：`test/jmeter/`。
+
+#### 1. Phase A 接口语义
+
+- `POST /flash-sale/order`
+  - 成功受理：`status=QUEUING`
+  - 失败：`status=FAILED` + message（库存不足/重复下单等）
+- `GET /flash-sale/order/result?userId=&itemId=`
+  - `QUEUING`：排队中
+  - `SUCCESS`：返回 `orderId`
+  - `FAILED`：返回失败原因
+
+#### 2. 压测与验收
+
+详见 `test/jmeter/README.md`，包含：
+
+- 基线脚本：`test/jmeter/seckill-baseline.jmx`
+- 异步脚本：`test/jmeter/seckill-async.jmx`
+- 验收 SQL：超卖检查、重复订单检查
+- 指标模板：QPS / RT / 失败率 / 超卖数 / 重复订单数
+
+> 说明：由于本地环境压测数据依赖你的机器资源与并发参数，建议在你本地按脚本跑出最终数据并填入模板。
+
+Phase B（1周）：统一鉴权与网关入口
+目标：把系统边界做规范，为后续拆分打地基。
+
+引入 JWT（登录签发、鉴权解析）
+新增 API Gateway（先做最小版）
+在网关做白名单 + 统一 Token 校验（参考 AuthGlobalFilter 思路）
+前端全部改走网关域名访问
+验收标准：业务服务不直接暴露给前端，权限控制统一在入口。
+
+Phase C（2周）：从单体到“伪微服务”拆分
+目标：先模块拆，再进程拆，降低风险。
+
+先在代码层拆包：user/goods/order/stock/common
+再拆为 Maven 多模块
+最后把 goods/order 拆成独立服务进程（优先拆这两个）
+服务间调用先用 OpenFeign（或 REST client）
+验收标准：至少 2 个业务服务可独立启动，核心流程可跨服务跑通。
+
+Phase D（1-2周）：缓存与可用性增强
+目标：补齐老师项目在工程化上的“亮点项”。
+
+商品详情 Cache Aside
+防穿透（空值缓存）、防击穿（互斥锁）、防雪崩（随机TTL）
+增加 Nginx 负载均衡到多实例 goods
+增加最小可观测（日志追踪ID、基础监控端点）
+验收标准：商品接口压测显著快于无缓存版本，实例可平滑扩展。
+
+Phase E（持续优化）：课程展示加分项
+JMeter 场景化压测脚本
+性能调优报告（SQL、连接池、JVM）
+架构图 + 演进路线图 + 实验结论沉淀到文档
