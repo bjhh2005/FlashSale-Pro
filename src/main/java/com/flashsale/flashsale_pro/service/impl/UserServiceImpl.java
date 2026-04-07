@@ -5,7 +5,6 @@ import com.flashsale.flashsale_pro.mapper.UserMapper;
 import com.flashsale.flashsale_pro.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -14,16 +13,13 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
 
     @Override
-    public String login(String username, String password) {
+    public User login(String username, String password) {
         // 1. 查询数据库中是否存在该用户
         User user = userMapper.findByUsername(username);
         
         // 2. 校验用户是否存在并且密码是否匹配（真实项目中需要对密码进行加密处理，比如MD5或BCrypt加密）
         if (user != null && user.getPassword().equals(password)) {
-            // 3. 登录成功，生成一个简单的Token返回给前端 (暂时使用UUID模拟Token)
-            // 后续可以引入JWT（JSON Web Token）或将Token存入Redis
-            String token = UUID.randomUUID().toString().replace("-", "");
-            return token;
+            return user;
         }
         
         // 登录失败返回null或者抛出自定义异常

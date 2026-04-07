@@ -4,6 +4,9 @@ export interface ApiResponse<T = unknown> {
   data: T | { raw: string } | null
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:9080'
+const TOKEN_KEY = 'flashsale_token'
+
 async function parseBody(res: Response): Promise<unknown | { raw: string } | null> {
   const text = await res.text()
   if (!text) return null
@@ -18,12 +21,23 @@ async function request<T = unknown>(
   path: string,
   options: RequestInit = {},
 ): Promise<ApiResponse<T>> {
-  const res = await fetch(path, {
+  const token = localStorage.getItem(TOKEN_KEY)
+  const headers = new Headers(options.headers ?? {})
+  if (token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
     credentials: 'include',
     ...options,
+    headers,
   })
 
   const data = (await parseBody(res)) as T | { raw: string } | null
+
+  if (res.status === 401) {
+    clearToken()
+  }
 
   return {
     status: res.status,
@@ -56,4 +70,12 @@ export async function postJson<T = unknown, B = unknown>(
 }
 
 export { request }
+
+export function saveToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY)
+}
 

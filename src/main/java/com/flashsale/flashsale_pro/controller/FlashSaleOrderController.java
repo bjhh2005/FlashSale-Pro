@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/flash-sale/order")
+@RequestMapping("/api/flash-sale/order")
 public class FlashSaleOrderController {
 
     @Autowired

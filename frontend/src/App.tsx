@@ -1,7 +1,8 @@
 import './App.css'
 import { useState } from 'react'
 import type { ApiResponse } from './api/client'
-import { loginUser, registerUser } from './api/user'
+import { clearToken, saveToken } from './api/client'
+import { loginUser, registerUser, type LoginData } from './api/user'
 import {
   fetchFlashSaleEvents,
   fetchFlashSaleItems,
@@ -227,6 +228,7 @@ function App() {
   const [password, setPassword] = useState('my_password_123')
   const [authLoading, setAuthLoading] = useState<'register' | 'login' | null>(null)
   const [authResult, setAuthResult] = useState<ApiResponse | null>(null)
+  const [loginTip, setLoginTip] = useState('')
 
   const [events, setEvents] = useState<FlashSaleEvent[] | null>(null)
   const [eventsLoading, setEventsLoading] = useState(false)
@@ -306,6 +308,14 @@ function App() {
     setAuthLoading('login')
     try {
       const res = await loginUser({ username, password })
+      const loginData = res.data as LoginData | null
+      if (res.ok && loginData?.token) {
+        saveToken(loginData.token)
+        setLoginTip('登录成功，JWT 已保存，后续请求将自动携带 Authorization。')
+      } else {
+        clearToken()
+        setLoginTip('登录失败，未保存 JWT。')
+      }
       setAuthResult(res)
     } finally {
       setAuthLoading(null)
@@ -555,8 +565,8 @@ function App() {
           <div className="flex flex-col items-start gap-2 text-xs text-slate-400 md:items-end">
             <div className="inline-flex items-center gap-1 rounded-full bg-slate-900/80 px-2.5 py-1 ring-1 ring-slate-700/60">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              后端：
-              <span className="font-mono text-slate-200">http://localhost:8080</span>
+              Gateway：
+              <span className="font-mono text-slate-200">http://localhost:9080</span>
             </div>
             <div className="inline-flex items-center gap-1 rounded-full bg-slate-900/80 px-2.5 py-1 ring-1 ring-slate-700/60">
               Nginx / Static：
@@ -614,7 +624,7 @@ function App() {
                       注册 / 登录
                     </h2>
                     <p className="mt-1 text-xs text-slate-400">
-                      使用简单的用户名 + 密码完成注册和登录，会话 Cookie 将自动随后续请求发送。
+                      使用用户名 + 密码登录后会保存 JWT，后续请求自动携带 Authorization。
                     </p>
                   </div>
                 </div>
@@ -672,6 +682,9 @@ function App() {
                     <JsonViewer value={prettyResult(authResult)} />
                   </div>
                 </details>
+                {loginTip ? (
+                  <p className="text-[11px] text-emerald-300">{loginTip}</p>
+                ) : null}
               </div>
             </section>
 

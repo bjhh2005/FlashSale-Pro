@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin/flash-sale/item")
+@RequestMapping("/api/admin/flash-sale/item")
 public class AdminFlashSaleItemController {
 
     @Autowired

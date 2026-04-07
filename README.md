@@ -319,7 +319,7 @@ mvn spring-boot:run
 - `POST /flash-sale/order`
   - 成功受理：`status=QUEUING`
   - 失败：`status=FAILED` + message（库存不足/重复下单等）
-- `GET /flash-sale/order/result?userId=&itemId=`
+- `GET /api/flash-sale/order/result?userId=&itemId=`
   - `QUEUING`：排队中
   - `SUCCESS`：返回 `orderId`
   - `FAILED`：返回失败原因
@@ -335,14 +335,31 @@ mvn spring-boot:run
 
 > 说明：由于本地环境压测数据依赖你的机器资源与并发参数，建议在你本地按脚本跑出最终数据并填入模板。
 
-Phase B（1周）：统一鉴权与网关入口
-目标：把系统边界做规范，为后续拆分打地基。
+### 六、Phase B（统一鉴权与网关入口）
 
-引入 JWT（登录签发、鉴权解析）
-新增 API Gateway（先做最小版）
-在网关做白名单 + 统一 Token 校验（参考 AuthGlobalFilter 思路）
-前端全部改走网关域名访问
-验收标准：业务服务不直接暴露给前端，权限控制统一在入口。
+本阶段完成了 JWT + Gateway 的最小可用闭环，核心改动如下：
+
+- 后端登录改为签发 JWT，并新增 `GET /api/user/me` 用于验证 token 解析；
+- 业务服务新增拦截器，固定 Bearer 规则与白名单：
+  - `/api/user/login`
+  - `/api/user/register`
+  - `/actuator/health`
+- 业务控制器统一为 `/api/**`，去除对 Nginx rewrite 的路径依赖；
+- 新增独立工程 `gateway/`（端口 `9080`），实现：
+  - `/api/** -> backend(8080)` 路由转发
+  - 全局鉴权过滤器（白名单放行、JWT 校验、透传 `X-User-Id`/`X-Username`）
+- 前端请求层支持 JWT 自动注入 `Authorization`，401 自动清理 token；
+- Nginx 的 `/api/` 已改为转发到 Gateway（`9080`）。
+
+#### 1. 验收清单（Phase B）
+
+- 登录成功拿到 JWT；
+- `GET /api/user/me`：
+  - 不带 token -> 401
+  - 错误 token -> 401
+  - 正确 token -> 200
+- 非白名单接口不带 token 一律 401；
+- 前端调用统一走 `/api`（网关入口）。
 
 Phase C（2周）：从单体到“伪微服务”拆分
 目标：先模块拆，再进程拆，降低风险。
