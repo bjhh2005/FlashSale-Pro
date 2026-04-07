@@ -404,6 +404,32 @@ Phase D（1-2周）：缓存与可用性增强
 增加最小可观测（日志追踪ID、基础监控端点）
 验收标准：商品接口压测显著快于无缓存版本，实例可平滑扩展。
 
+#### 1. 当前落地结果（Phase D）
+
+- 商品详情接口（`GET /api/flash-sale/items/{itemId}`）已接入 Cache Aside：
+  - 防穿透：空值缓存 `__NULL__`（短 TTL）
+  - 防击穿：Redis 互斥锁（`setIfAbsent + expire`）
+  - 防雪崩：基础 TTL + 随机抖动
+- 保持 Nginx 统一入口不变（`Nginx -> Gateway`），并在 Gateway 对 goods 做多实例负载均衡：
+  - `lb://flashsale-goods`
+  - 静态实例：`GOODS_INSTANCE_1`、`GOODS_INSTANCE_2`
+- 最小可观测增强：
+  - Gateway 统一生成/透传 `X-Trace-Id`（无则生成，有则沿用）
+  - goods/order 通过 MDC 输出 traceId（`logging.pattern.level`）
+  - gateway/goods/order 暴露 `health,info,prometheus`
+
+#### 2. 本地运行建议（Phase D）
+
+1) 启基础设施：
+   - `docker-compose up -d postgres redis rabbitmq gateway nginx`
+2) 启 goods 双实例（本地）：
+   - 实例A：`mvn -pl flashsale-goods-app spring-boot:run`
+   - 实例B：`mvn -pl flashsale-goods-app spring-boot:run -Dspring-boot.run.arguments=--server.port=8083`
+3) 启 order：
+   - `mvn -pl flashsale-order-app spring-boot:run`
+4) 统一入口访问：
+   - `http://localhost/api/**`
+
 Phase E（持续优化）：课程展示加分项
 JMeter 场景化压测脚本
 性能调优报告（SQL、连接池、JVM）

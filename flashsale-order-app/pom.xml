@@ -29,6 +29,10 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
@@ -123,6 +127,7 @@
                         <include>com/flashsale/flashsale_pro/config/RabbitMQConfig.java</include>
                         <include>com/flashsale/flashsale_pro/mq/SeckillOrderMessage.java</include>
                         <include>com/flashsale/flashsale_pro/mq/SeckillOrderConsumer.java</include>
+                        <include>com/flashsale/order/web/TraceIdMdcFilter.java</include>
                     </includes>
                 </configuration>
             </plugin>

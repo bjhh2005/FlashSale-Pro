@@ -26,7 +26,19 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
@@ -103,6 +115,9 @@
                         <include>com/flashsale/flashsale_pro/controller/AdminFlashSaleEventController.java</include>
                         <include>com/flashsale/flashsale_pro/controller/AdminFlashSaleItemController.java</include>
                         <include>com/flashsale/flashsale_pro/controller/FlashSaleQueryController.java</include>
+                        <include>com/flashsale/goods/web/TraceIdMdcFilter.java</include>
+                        <include>com/flashsale/goods/internal/InternalItemController.java</include>
+                        <include>com/flashsale/goods/internal/InternalItemResponse.java</include>
                     </includes>
                 </configuration>
             </plugin>

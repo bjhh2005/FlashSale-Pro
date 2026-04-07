@@ -14,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
@@ -32,32 +33,46 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        String path = exchange.getRequest().getURI().getPath();
+        String incomingTraceId = exchange.getRequest().getHeaders().getFirst("X-Trace-Id");
+        String traceId = (incomingTraceId == null || incomingTraceId.isBlank())
+                ? UUID.randomUUID().toString().replace("-", "")
+                : incomingTraceId;
+
+        ServerHttpRequest tracedRequest = exchange.getRequest().mutate()
+                .header("X-Trace-Id", traceId)
+                .build();
+        ServerWebExchange tracedExchange = exchange.mutate().request(tracedRequest).build();
+        tracedExchange.getResponse().getHeaders().set("X-Trace-Id", traceId);
+
+        String path = tracedExchange.getRequest().getURI().getPath();
         for (String white : WHITE_LIST) {
             if (path.startsWith(white)) {
-                return chain.filter(exchange);
+                return chain.filter(tracedExchange);
             }
         }
 
-        String auth = exchange.getRequest().getHeaders().getFirst("Authorization");
+        String auth = tracedExchange.getRequest().getHeaders().getFirst("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
-            return unauthorized(exchange, "未携带有效的 Bearer Token");
+            return unauthorized(tracedExchange, "未携带有效的 Bearer Token");
         }
 
         String token = auth.substring("Bearer ".length()).trim();
         if (token.isEmpty()) {
-            return unauthorized(exchange, "未携带有效的 Bearer Token");
+            return unauthorized(tracedExchange, "未携带有效的 Bearer Token");
         }
 
         try {
             Claims claims = jwtVerifier.parseAndValidate(token);
-            ServerHttpRequest mutated = exchange.getRequest().mutate()
+            ServerHttpRequest mutated = tracedExchange.getRequest().mutate()
                     .header("X-User-Id", claims.getSubject())
                     .header("X-Username", String.valueOf(claims.get("username")))
+                    .header("X-Trace-Id", traceId)
                     .build();
-            return chain.filter(exchange.mutate().request(mutated).build());
+            ServerWebExchange authExchange = tracedExchange.mutate().request(mutated).build();
+            authExchange.getResponse().getHeaders().set("X-Trace-Id", traceId);
+            return chain.filter(authExchange);
         } catch (Exception ex) {
-            return unauthorized(exchange, "Token 无效");
+            return unauthorized(tracedExchange, "Token 无效");
         }
     }
 

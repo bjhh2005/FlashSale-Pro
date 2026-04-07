@@ -5,6 +5,13 @@ spring:
   application:
     name: flashsale-gateway
   cloud:
+    discovery:
+      client:
+        simple:
+          instances:
+            flashsale-goods:
+              - uri: ${GOODS_INSTANCE_1:http://localhost:8081}
+              - uri: ${GOODS_INSTANCE_2:http://localhost:8083}
     gateway:
       server:
         webflux:
@@ -26,7 +33,7 @@ spring:
               predicates:
                 - Path=/api/flash-sale/order/**
             - id: flashsale-goods
-              uri: ${GOODS_BASE_URL:http://localhost:8081}
+              uri: lb://flashsale-goods
               predicates:
                 - Path=/api/**
 
@@ -34,7 +41,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
+logging:
+  pattern:
+    level: "%5p [traceId:%X{traceId}]"
 
 jwt:
   secret: ${JWT_SECRET:flashsale_phase_b_secret_key_please_change}
