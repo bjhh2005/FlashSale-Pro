@@ -54,6 +54,11 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <version>2023.0.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
         </dependency>
@@ -127,6 +132,9 @@
                         <include>com/flashsale/flashsale_pro/config/RabbitMQConfig.java</include>
                         <include>com/flashsale/flashsale_pro/mq/SeckillOrderMessage.java</include>
                         <include>com/flashsale/flashsale_pro/mq/SeckillOrderConsumer.java</include>
+                        <include>com/flashsale/order/feign/InternalItemClient.java</include>
+                        <include>com/flashsale/order/feign/InternalItemResponse.java</include>
+                        <include>com/flashsale/order/feign/StockFeignClient.java</include>
                         <include>com/flashsale/order/web/TraceIdMdcFilter.java</include>
                     </includes>
                 </configuration>

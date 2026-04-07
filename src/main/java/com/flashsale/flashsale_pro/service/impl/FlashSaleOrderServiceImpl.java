@@ -9,6 +9,7 @@ import com.flashsale.flashsale_pro.mapper.FlashSaleOrderMapper;
 import com.flashsale.flashsale_pro.service.FlashSaleOrderService;
 import com.flashsale.order.feign.InternalItemClient;
 import com.flashsale.order.feign.InternalItemResponse;
+import com.flashsale.order.feign.StockFeignClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,6 +45,9 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
 
     @Autowired(required = false)
     private InternalItemClient internalItemClient;
+
+    @Autowired(required = false)
+    private StockFeignClient stockFeignClient;
 
     @Value("${internal.api.token:phase_c_internal_token}")
     private String internalApiToken;
@@ -187,7 +191,7 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
             return;
         }
 
-        int updatedRows = flashSaleItemMapper.decreaseStock(itemId, quantity);
+        int updatedRows = decreaseStock(itemId, quantity);
         if (updatedRows <= 0) {
             rollbackRedisReservation(userId, itemId, quantity);
             putResult(userId, itemId, "FAILED:库存不足");
@@ -312,6 +316,23 @@ public class FlashSaleOrderServiceImpl implements FlashSaleOrderService {
             }
         }
         return flashSaleItemMapper.findById(itemId);
+    }
+
+    private int decreaseStock(Long itemId, int quantity) {
+        if (stockFeignClient != null) {
+            try {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("itemId", itemId);
+                payload.put("quantity", quantity);
+                var result = stockFeignClient.deduct(payload);
+                if (result != null && result.getCode() != null && result.getCode() == 200) {
+                    return 1;
+                }
+            } catch (Exception ignored) {
+                // stock 服务不可用时，回退本地 mapper 兜底
+            }
+        }
+        return flashSaleItemMapper.decreaseStock(itemId, quantity);
     }
 }
 

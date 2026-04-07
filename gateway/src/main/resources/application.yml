@@ -5,13 +5,9 @@ spring:
   application:
     name: flashsale-gateway
   cloud:
-    discovery:
-      client:
-        simple:
-          instances:
-            flashsale-goods:
-              - uri: ${GOODS_INSTANCE_1:http://localhost:8081}
-              - uri: ${GOODS_INSTANCE_2:http://localhost:8083}
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
     gateway:
       server:
         webflux:
@@ -29,7 +25,7 @@ spring:
                 allowCredentials: true
           routes:
             - id: flashsale-order
-              uri: ${ORDER_BASE_URL:http://localhost:8082}
+              uri: lb://flashsale-order
               predicates:
                 - Path=/api/flash-sale/order/**
             - id: flashsale-goods

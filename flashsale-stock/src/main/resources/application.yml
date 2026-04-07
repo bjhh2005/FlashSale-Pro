@@ -1,0 +1,20 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: flashsale-stock
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:127.0.0.1:8848}
+  datasource:
+    url: ${STOCK_DATASOURCE_URL:jdbc:postgresql://127.0.0.1:15432/flashsale_db}
+    username: ${STOCK_DATASOURCE_USERNAME:host}
+    password: ${STOCK_DATASOURCE_PASSWORD:hostpassword}
+    driver-class-name: org.postgresql.Driver
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+

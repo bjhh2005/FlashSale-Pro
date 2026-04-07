@@ -85,3 +85,21 @@ mvn -pl flashsale-order-app spring-boot:run
 - 错误率：no-cache=____%，cache=____%
 
 验收建议：cache 组的平均 RT / P95 显著下降，QPS 明显提升。
+
+---
+
+## Phase E Nginx 多 LB 策略压测（新增）
+
+建议分别对以下路径执行同参数压测并对比：
+
+- 轮询：`/api/goods/detail/1`
+- 最少连接：`/api/lb/least/goods/detail/1`
+- IP Hash：`/api/lb/iphash/goods/detail/1`
+- 一致性哈希：`/api/lb/urihash/goods/detail/1`
+
+建议记录：
+
+- 吞吐量（TPS/QPS）
+- 平均 RT / P95 RT
+- 错误率
+- 上游命中分布（通过响应头 `X-Nginx-Upstream`）

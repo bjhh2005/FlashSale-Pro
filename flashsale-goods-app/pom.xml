@@ -45,6 +45,11 @@
             <artifactId>mybatis-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <version>2023.0.1.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
@@ -118,6 +123,8 @@
                         <include>com/flashsale/goods/web/TraceIdMdcFilter.java</include>
                         <include>com/flashsale/goods/internal/InternalItemController.java</include>
                         <include>com/flashsale/goods/internal/InternalItemResponse.java</include>
+                        <include>com/flashsale/goods/config/ReadReplicaDataSourceConfig.java</include>
+                        <include>com/flashsale/goods/controller/ReadWriteRouteProbeController.java</include>
                     </includes>
                 </configuration>
             </plugin>
