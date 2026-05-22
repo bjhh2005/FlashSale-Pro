@@ -33,12 +33,12 @@ public class FlashSaleQueryController {
     }
 
     @GetMapping("/events/{eventId}/items")
-    public Result<List<FlashSaleItem>> listItems(@PathVariable Long eventId) {
+    public Result<List<FlashSaleItem>> listItems(@PathVariable("eventId") Long eventId) {
         return Result.success(flashSaleItemService.listByEventId(eventId));
     }
 
     @GetMapping("/items/{itemId}")
-    public Result<FlashSaleItem> getItem(@PathVariable Long itemId) {
+    public Result<FlashSaleItem> getItem(@PathVariable("itemId") Long itemId) {
         return Result.success(flashSaleItemService.getById(itemId));
     }
 }

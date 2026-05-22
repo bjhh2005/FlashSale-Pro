@@ -22,7 +22,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webmvc</artifactId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -52,6 +52,10 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
@@ -117,31 +121,24 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <includes>
-                        <include>com/flashsale/flashsale_pro/entity/FlashSaleOrder.java</include>
-                        <include>com/flashsale/flashsale_pro/entity/FlashSaleItem.java</include>
-                        <include>com/flashsale/flashsale_pro/mapper/FlashSaleOrderMapper.java</include>
-                        <include>com/flashsale/flashsale_pro/mapper/FlashSaleItemMapper.java</include>
-                        <include>com/flashsale/flashsale_pro/service/FlashSaleOrderService.java</include>
-                        <include>com/flashsale/flashsale_pro/service/impl/FlashSaleOrderServiceImpl.java</include>
-                        <include>com/flashsale/flashsale_pro/common/RateLimiterService.java</include>
-                        <include>com/flashsale/flashsale_pro/common/Result.java</include>
-                        <include>com/flashsale/flashsale_pro/controller/FlashSaleOrderController.java</include>
-                        <include>com/flashsale/flashsale_pro/security/JwtService.java</include>
-                        <include>com/flashsale/flashsale_pro/security/AuthInterceptor.java</include>
-                        <include>com/flashsale/flashsale_pro/config/WebMvcAuthConfig.java</include>
-                        <include>com/flashsale/flashsale_pro/config/RabbitMQConfig.java</include>
-                        <include>com/flashsale/flashsale_pro/mq/SeckillOrderMessage.java</include>
-                        <include>com/flashsale/flashsale_pro/mq/SeckillOrderConsumer.java</include>
-                        <include>com/flashsale/order/feign/InternalItemClient.java</include>
-                        <include>com/flashsale/order/feign/InternalItemResponse.java</include>
-                        <include>com/flashsale/order/feign/StockFeignClient.java</include>
-                        <include>com/flashsale/order/web/TraceIdMdcFilter.java</include>
+                        <include>com/flashsale/order/**</include>
+                        <include>com/flashsale/flashsale_pro/entity/**</include>
+                        <include>com/flashsale/flashsale_pro/mapper/**</include>
+                        <include>com/flashsale/flashsale_pro/service/**</include>
+                        <include>com/flashsale/flashsale_pro/controller/**</include>
+                        <include>com/flashsale/flashsale_pro/security/**</include>
+                        <include>com/flashsale/flashsale_pro/common/**</include>
+                        <include>com/flashsale/flashsale_pro/config/**</include>
+                        <include>com/flashsale/flashsale_pro/mq/**</include>
                     </includes>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.flashsale.order.OrderApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>

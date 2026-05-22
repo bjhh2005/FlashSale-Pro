@@ -22,7 +22,14 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     private static final List<String> WHITE_LIST = List.of(
             "/api/user/login",
             "/api/user/register",
-            "/actuator/health"
+            "/api/flash-sale/events",
+            "/api/flash-sale/items",
+            "/api/behavior/event",
+            "/api/behavior/events/batch",
+            "/actuator/health",
+            "/actuator/intent",
+            "/actuator/entropy",
+            "/actuator/pid"
     );
 
     private final JwtVerifier jwtVerifier;

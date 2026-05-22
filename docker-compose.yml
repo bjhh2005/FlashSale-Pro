@@ -52,7 +52,7 @@ services:
       MODE: standalone
       NACOS_AUTH_ENABLE: "false"
     ports:
-      - "8848:8848"
+      - "8930:8848"
     restart: always
   goods:
     build:
@@ -63,6 +63,8 @@ services:
       SERVER_PORT: 8081
       NACOS_ADDR: nacos:8848
       READ_DATASOURCE_URL: jdbc:postgresql://postgres-replica:5432/flashsale_db
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       - postgres-master
       - postgres-replica
@@ -80,6 +82,8 @@ services:
       SERVER_PORT: 8083
       NACOS_ADDR: nacos:8848
       READ_DATASOURCE_URL: jdbc:postgresql://postgres-replica:5432/flashsale_db
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     depends_on:
       - postgres-master
       - postgres-replica
@@ -96,6 +100,13 @@ services:
     environment:
       SERVER_PORT: 8082
       NACOS_ADDR: nacos:8848
+      ORDER_DATASOURCE_URL: jdbc:postgresql://postgres-master:5432/flashsale_db
+      ORDER_DATASOURCE_USERNAME: host
+      ORDER_DATASOURCE_PASSWORD: hostpassword
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
     depends_on:
       - postgres-master
       - redis
@@ -121,16 +132,40 @@ services:
     restart: always
   gateway:
     build:
-      context: ./gateway
+      context: .
+      dockerfile: ./gateway/Dockerfile
     container_name: flashsale_gateway
     environment:
       NACOS_ADDR: nacos:8848
       JWT_SECRET: flashsale_phase_b_secret_key_please_change
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      INTENT_FILTER_ENABLED: "true"
+      INTENT_DEGRADE_TO_TOKEN_BUCKET: "true"
       TZ: Asia/Shanghai
     depends_on:
       - nacos
+      - redis
     ports:
       - "9080:9080"
+    restart: always
+  bi:
+    build:
+      context: ./bi
+      dockerfile: Dockerfile
+    container_name: flashsale_bi
+    profiles:
+      - full
+    environment:
+      DB_URL: postgresql://host:hostpassword@postgres-master:5432/flashsale_db
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      TZ: Asia/Shanghai
+    depends_on:
+      - postgres-master
+      - redis
+    ports:
+      - "8000:8000"
     restart: always
   nginx:
     image: ghcr.io/nginxinc/nginx-unprivileged:stable

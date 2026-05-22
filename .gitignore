@@ -36,3 +36,11 @@ build/
 
 老师要求.md
 /flashmall
+.m2/
+bi/.venv/
+bi/data/model.pkl
+bi/data/feature_names.json
+bi/data/shap_values.npy
+*.txt
+!bi/requirements.txt
+!frontend/node_modules/**/*.txt

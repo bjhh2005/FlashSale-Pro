@@ -23,7 +23,11 @@ export interface CreateOrderPayload {
 export async function createOrder(
   payload: CreateOrderPayload,
 ): Promise<ApiResponse<FlashSaleOrder>> {
-  return postJson('/api/flash-sale/order', payload)
+  return postJson('/api/flash-sale/order', payload, {
+    headers: {
+      'X-User-Id': String(payload.userId),
+    },
+  })
 }
 
 export async function fetchUserOrders(

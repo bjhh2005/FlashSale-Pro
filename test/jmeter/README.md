@@ -103,3 +103,48 @@ mvn -pl flashsale-order-app spring-boot:run
 - 平均 RT / P95 RT
 - 错误率
 - 上游命中分布（通过响应头 `X-Nginx-Upstream`）
+
+---
+
+## Phase BI NFR1 智能网关性能验收（新增）
+
+### 1. 网关决策延迟专项测试
+
+验证香农熵计算 + Redis 意愿查询的端到端延迟是否满足 <5ms NFR 要求：
+
+```bash
+# 在全栈启动后执行
+python test/jmeter/nfr1_benchmark.py localhost 9080 latency
+```
+
+输出指标：平均/P50/P95/P99 延迟，验收标准 P95<5ms, P99<10ms
+
+### 2. 网关吞吐量测试
+
+验证网关在智能拦截开启时能否维持 >=10,000 QPS：
+
+```bash
+python test/jmeter/nfr1_benchmark.py localhost 9080 throughput 200 30
+# 参数: host port mode concurrency duration_sec
+```
+
+### 3. JMeter 全链路压测
+
+```bash
+# 同步基线
+jmeter -n -t test/jmeter/seckill-baseline.jmx -l test/jmeter/baseline.jtl
+# 异步削峰
+jmeter -n -t test/jmeter/seckill-async.jmx -l test/jmeter/async.jtl
+# Python 自动化+分析
+python test/jmeter/bi_perf_test.py run test/jmeter/seckill-async.jmx test/jmeter/results-bi.jtl
+```
+
+### 4. NFR1 验收指标
+
+| 指标 | 验收标准 | 实测值 |
+|---|---|---|
+| 网关决策延迟 P95 | < 5ms | ____ms |
+| 网关决策延迟 P99 | < 10ms | ____ms |
+| 网关吞吐量 | >= 10,000 QPS | ____QPS |
+| 超卖数 | = 0 | ____ |
+| 重复订单数 | = 0 | ____ |

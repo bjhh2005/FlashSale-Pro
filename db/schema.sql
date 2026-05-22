@@ -56,3 +56,45 @@ CREATE TABLE flash_sale_order (
     paid_at TIMESTAMPTZ,
     CONSTRAINT uq_user_item UNIQUE (user_id, item_id)
 );
+
+-- 用户行为事件表 (FR1: 多维用户行为数据采集)
+CREATE TABLE user_behavior_event (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    product_id BIGINT,
+    event_id BIGINT,
+    item_id BIGINT,
+    action VARCHAR(30) NOT NULL,  -- CLICK, FAVORITE, ADD_TO_CART, BROWSE, SHARE, PURCHASE
+    dwell_seconds INT,            -- 浏览时长(秒)
+    extra JSONB,                  -- 扩展属性(如来源页面、设备信息等)
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_behavior_user ON user_behavior_event(user_id);
+CREATE INDEX idx_behavior_user_product ON user_behavior_event(user_id, product_id);
+CREATE INDEX idx_behavior_action ON user_behavior_event(action);
+CREATE INDEX idx_behavior_created ON user_behavior_event(created_at);
+
+-- 用户特征矩阵表 (特征工程管道输出)
+CREATE TABLE user_feature_matrix (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    event_id BIGINT,
+    click_count INT NOT NULL DEFAULT 0,
+    favorite_count INT NOT NULL DEFAULT 0,
+    add_to_cart_count INT NOT NULL DEFAULT 0,
+    browse_count INT NOT NULL DEFAULT 0,
+    share_count INT NOT NULL DEFAULT 0,
+    purchase_count INT NOT NULL DEFAULT 0,
+    avg_dwell_seconds NUMERIC(10,2) NOT NULL DEFAULT 0,
+    recent_7d_action_count INT NOT NULL DEFAULT 0,
+    recent_1d_action_count INT NOT NULL DEFAULT 0,
+    action_decay_score NUMERIC(10,4) NOT NULL DEFAULT 0,
+    cross_product_count INT NOT NULL DEFAULT 0,
+    price_sensitivity NUMERIC(10,4) NOT NULL DEFAULT 0,
+    purchase_intent_score NUMERIC(5,4),          -- 购买意愿得分 [0,1]
+    intent_score_updated_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_feature_user ON user_feature_matrix(user_id);
+CREATE INDEX idx_feature_event ON user_feature_matrix(event_id);

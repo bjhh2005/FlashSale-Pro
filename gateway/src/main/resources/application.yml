@@ -9,29 +9,31 @@ spring:
       discovery:
         server-addr: ${NACOS_ADDR:127.0.0.1:8848}
     gateway:
-      server:
-        webflux:
-          globalcors:
-            corsConfigurations:
-              '[/**]':
-                allowedOrigins: "http://localhost:5173"
-                allowedMethods:
-                  - GET
-                  - POST
-                  - PUT
-                  - DELETE
-                  - OPTIONS
-                allowedHeaders: "*"
-                allowCredentials: true
-          routes:
-            - id: flashsale-order
-              uri: lb://flashsale-order
-              predicates:
-                - Path=/api/flash-sale/order/**
-            - id: flashsale-goods
-              uri: lb://flashsale-goods
-              predicates:
-                - Path=/api/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: flashsale-order
+          uri: lb://flashsale-order
+          predicates:
+            - Path=/api/flash-sale/order/**
+        - id: flashsale-goods
+          uri: lb://flashsale-goods
+          predicates:
+            - Path=/api/**
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
 
 management:
   endpoints:
@@ -44,3 +46,13 @@ logging:
 
 jwt:
   secret: ${JWT_SECRET:flashsale_phase_b_secret_key_please_change}
+
+intent:
+  score-key-prefix: ${INTENT_SCORE_KEY_PREFIX:intent:score:}
+  tier-key-prefix: ${INTENT_TIER_KEY_PREFIX:intent:tier:}
+  high-threshold: ${INTENT_HIGH_THRESHOLD:0.7}
+  low-threshold: ${INTENT_LOW_THRESHOLD:0.3}
+  enabled: ${INTENT_FILTER_ENABLED:true}
+  degrade-to-token-bucket: ${INTENT_DEGRADE_TO_TOKEN_BUCKET:true}
+  token-bucket-capacity: ${TOKEN_BUCKET_CAPACITY:1000}
+  token-bucket-refill-rate: ${TOKEN_BUCKET_REFILL_RATE:100}

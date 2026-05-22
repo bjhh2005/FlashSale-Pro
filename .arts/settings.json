@@ -1,0 +1,6 @@
+{
+    "clawMode.mode": "editor",
+    "workbench.activityBar.location": "default",
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.compile.nullAnalysis.mode": "automatic"
+}

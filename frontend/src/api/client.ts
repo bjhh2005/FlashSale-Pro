@@ -4,7 +4,7 @@ export interface ApiResponse<T = unknown> {
   data: T | { raw: string } | null
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:9080'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
 const TOKEN_KEY = 'flashsale_token'
 
 async function parseBody(res: Response): Promise<unknown | { raw: string } | null> {

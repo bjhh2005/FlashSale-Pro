@@ -22,7 +22,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webmvc</artifactId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -68,6 +68,29 @@
             <artifactId>jjwt-jackson</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.17.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.17.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>1.17.5</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -96,41 +119,40 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <includes>
-                        <include>com/flashsale/flashsale_pro/entity/User.java</include>
-                        <include>com/flashsale/flashsale_pro/entity/Product.java</include>
-                        <include>com/flashsale/flashsale_pro/entity/FlashSaleEvent.java</include>
-                        <include>com/flashsale/flashsale_pro/entity/FlashSaleItem.java</include>
-                        <include>com/flashsale/flashsale_pro/mapper/UserMapper.java</include>
-                        <include>com/flashsale/flashsale_pro/mapper/ProductMapper.java</include>
-                        <include>com/flashsale/flashsale_pro/mapper/FlashSaleEventMapper.java</include>
-                        <include>com/flashsale/flashsale_pro/mapper/FlashSaleItemMapper.java</include>
-                        <include>com/flashsale/flashsale_pro/service/UserService.java</include>
-                        <include>com/flashsale/flashsale_pro/service/ProductService.java</include>
-                        <include>com/flashsale/flashsale_pro/service/FlashSaleEventService.java</include>
-                        <include>com/flashsale/flashsale_pro/service/FlashSaleItemService.java</include>
-                        <include>com/flashsale/flashsale_pro/service/impl/UserServiceImpl.java</include>
-                        <include>com/flashsale/flashsale_pro/service/impl/ProductServiceImpl.java</include>
-                        <include>com/flashsale/flashsale_pro/service/impl/FlashSaleEventServiceImpl.java</include>
-                        <include>com/flashsale/flashsale_pro/service/impl/FlashSaleItemServiceImpl.java</include>
-                        <include>com/flashsale/flashsale_pro/security/JwtService.java</include>
-                        <include>com/flashsale/flashsale_pro/security/AuthInterceptor.java</include>
-                        <include>com/flashsale/flashsale_pro/config/WebMvcAuthConfig.java</include>
-                        <include>com/flashsale/flashsale_pro/controller/UserController.java</include>
-                        <include>com/flashsale/flashsale_pro/controller/AdminProductController.java</include>
-                        <include>com/flashsale/flashsale_pro/controller/AdminFlashSaleEventController.java</include>
-                        <include>com/flashsale/flashsale_pro/controller/AdminFlashSaleItemController.java</include>
+                        <include>com/flashsale/goods/**</include>
+                        <include>com/flashsale/flashsale_pro/entity/**</include>
+                        <include>com/flashsale/flashsale_pro/mapper/**</include>
+                        <include>com/flashsale/flashsale_pro/service/**</include>
+                        <include>com/flashsale/flashsale_pro/controller/FlashSaleItemController.java</include>
                         <include>com/flashsale/flashsale_pro/controller/FlashSaleQueryController.java</include>
-                        <include>com/flashsale/goods/web/TraceIdMdcFilter.java</include>
-                        <include>com/flashsale/goods/internal/InternalItemController.java</include>
-                        <include>com/flashsale/goods/internal/InternalItemResponse.java</include>
-                        <include>com/flashsale/goods/config/ReadReplicaDataSourceConfig.java</include>
-                        <include>com/flashsale/goods/controller/ReadWriteRouteProbeController.java</include>
+                        <include>com/flashsale/flashsale_pro/security/**</include>
+                        <include>com/flashsale/flashsale_pro/config/WebMvcAuthConfig.java</include>
+                        <include>com/flashsale/flashsale_pro/config/ReadReplicaDataSourceConfig.java</include>
                     </includes>
+                    <excludes>
+                        <exclude>com/flashsale/flashsale_pro/config/RabbitMQConfig.java</exclude>
+                        <exclude>com/flashsale/flashsale_pro/mq/**</exclude>
+                        <exclude>com/flashsale/flashsale_pro/service/impl/FlashSaleOrderServiceImpl.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                        --add-opens java.base/java.lang.invoke=ALL-UNNAMED
+                        --add-opens java.base/java.util=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.flashsale.goods.GoodsApplication</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
