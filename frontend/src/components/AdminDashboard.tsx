@@ -308,10 +308,10 @@ export default function AdminDashboard() {
                 </span>
               </div>
               <h1 className="text-3xl font-bold tracking-tight text-white md:text-5xl">
-                FlashSale-Pro 实时风控与秒杀 BI 大屏
+                FlashSale-Pro 分布式秒杀指挥台
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-400">
-                管理员在这里看系统负载、行为熵染色、PID 限流和 BI 服务的模型解释结果。用户在商城端的浏览、收藏、加购、秒杀和支付会同步出现在这里，形成路演闭环。
+                这页优先展示微服务架构如何承接秒杀流量：Nginx 入口、Gateway 统一治理、goods 双实例横向扩展、order/stock 解耦、Redis 共享状态、RabbitMQ 异步削峰。风控和 BI 是架构上的保护与决策层。
               </p>
             </div>
             <div className="rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 text-sm">
@@ -323,20 +323,37 @@ export default function AdminDashboard() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-4 px-5 py-5 md:grid-cols-2 xl:grid-cols-4">
-        <Kpi title="总请求" value={mergedEntropy.totalRequests.toLocaleString()} note={`含商城联动 ${demoSummary.totalEvents} 次`} />
-        <Kpi title="当前 QPS" value={Math.round(pidData.currentQps + demoSummary.totalEvents * 8).toString()} note={`令牌桶 ${Math.round(pidData.currentRate)}/s`} />
-        <Kpi title="BLACK 拦截率" value={`${blockRate}%`} note={`本场拦截 ${demoSummary.blockedCount} 次`} tone="red" />
-        <Kpi title="DB 负载" value={`${Math.round(pidData.currentLoad)}%`} note={`目标 ${pidData.targetLoad}% · 误差 ${pidData.error}`} tone="amber" />
+        <Kpi title="服务实例" value="7" note="nginx / gateway / goods x2 / order / stock / bi" />
+        <Kpi title="商品服务副本" value="2" note="goods:8081 + goods-2:8083 横向扩展" />
+        <Kpi title="当前 QPS" value={Math.round(pidData.currentQps + demoSummary.totalEvents * 8).toString()} note={`Gateway 令牌桶 ${Math.round(pidData.currentRate)}/s`} />
+        <Kpi title="保护性拦截" value={`${blockRate}%`} note={`仅异常脚本 ${demoSummary.blockedCount} 次`} tone="amber" />
+      </section>
+
+      <section className="mx-auto grid max-w-7xl gap-3 px-5 pb-5 lg:grid-cols-6">
+        {[
+          ['Nginx', '静态资源 + 反向代理', '入口分流'],
+          ['Gateway', 'JWT / 熵染色 / PID', '统一治理'],
+          ['goods x2', '商品查询双实例', '横向扩展'],
+          ['order', '创建订单 / 支付', '业务解耦'],
+          ['Redis', '库存 / 熵矩阵 / 令牌', '共享状态'],
+          ['RabbitMQ', '异步削峰', '抗峰值'],
+        ].map(([name, detail, tag]) => (
+          <div key={name} className="rounded-lg border border-slate-800 bg-slate-900/80 p-4">
+            <p className="text-sm font-bold text-cyan-200">{name}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-400">{detail}</p>
+            <p className="mt-3 rounded-full bg-slate-950 px-2 py-1 text-center text-[11px] text-slate-300">{tag}</p>
+          </div>
+        ))}
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-4 px-5 pb-5 xl:grid-cols-3">
         <ChartPanel title="商城实时转化漏斗" subtitle="从 /mall 点击行为同步而来，适合现场边点边看">
           <ReactECharts option={funnelOption} theme="dark" style={{ height: 320 }} />
         </ChartPanel>
-        <ChartPanel title="香农行为条件熵分布" subtitle="EntropyFilter 按行为序列复杂度识别机器请求">
+        <ChartPanel title="香农条件熵保护层" subtitle="只对异常脚本做降级/拦截，不把真实用户连续抢购当作恶意">
           <ReactECharts option={entropyOption} theme="dark" style={{ height: 320 }} />
         </ChartPanel>
-        <ChartPanel title="分级流量染色" subtitle="Gateway 写入 X-Traffic-Color: GREEN / YELLOW / BLACK">
+        <ChartPanel title="Gateway 分级流量" subtitle="GREEN 正常放行，YELLOW 观察降级，BLACK 保护性拦截">
           <ReactECharts option={trafficPieOption} theme="dark" style={{ height: 320 }} />
         </ChartPanel>
       </section>
@@ -399,9 +416,9 @@ export default function AdminDashboard() {
       </section>
 
       <section className="mx-auto grid max-w-7xl gap-4 px-5 pb-6 md:grid-cols-3">
-        <ArchitectureCard title="分布式入口" value="Nginx + Gateway" detail="/api 进入 Gateway；/api/goods 可演示 Nginx 对 goods / goods-2 的多实例转发。" />
-        <ArchitectureCard title="服务发现与拆分" value="Nacos + 4 服务" detail="goods、order、stock、gateway 独立容器，Gateway 通过 lb:// 服务名路由。" />
-        <ArchitectureCard title="状态与削峰" value="Redis + RabbitMQ" detail="Redis 存库存、意愿分、熵矩阵和 PID 令牌；RabbitMQ 用于订单异步链路。" />
+        <ArchitectureCard title="优势 1：横向扩展" value="goods 双实例" detail="商品查询是秒杀入口高频读请求，拆成 goods / goods-2 后可通过 Nginx 与 Gateway 分摊压力。" />
+        <ArchitectureCard title="优势 2：状态外置" value="Redis" detail="库存、熵矩阵、意愿分和令牌桶放到 Redis，服务实例可以无状态扩容。" />
+        <ArchitectureCard title="优势 3：削峰解耦" value="RabbitMQ" detail="订单链路可以异步化，避免瞬时流量直接压垮数据库和支付状态机。" />
       </section>
     </main>
   )

@@ -123,8 +123,7 @@
                         <include>com/flashsale/flashsale_pro/entity/**</include>
                         <include>com/flashsale/flashsale_pro/mapper/**</include>
                         <include>com/flashsale/flashsale_pro/service/**</include>
-                        <include>com/flashsale/flashsale_pro/controller/FlashSaleItemController.java</include>
-                        <include>com/flashsale/flashsale_pro/controller/FlashSaleQueryController.java</include>
+                        <include>com/flashsale/flashsale_pro/controller/**</include>
                         <include>com/flashsale/flashsale_pro/security/**</include>
                         <include>com/flashsale/flashsale_pro/config/WebMvcAuthConfig.java</include>
                         <include>com/flashsale/flashsale_pro/config/ReadReplicaDataSourceConfig.java</include>

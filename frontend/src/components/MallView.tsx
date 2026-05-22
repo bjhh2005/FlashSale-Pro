@@ -217,9 +217,15 @@ const riskLabel: Record<RiskMode, string> = {
 }
 
 const riskDescription: Record<RiskMode, string> = {
-  normal: '行为节奏稳定，请求正常进入秒杀链路。',
-  hot: '收藏和加购更多，推荐与转化指标会快速上升。',
-  bot: '高频低熵请求，页面会标记黑流量并解释网关拦截点。',
+  normal: '真实用户可能连续抢购，系统优先保障放行与库存一致性。',
+  hot: '购买意愿更高，Gateway 给予更高优先级，推荐与转化指标会上升。',
+  bot: '模拟自动化脚本，固定路径 + 高频请求才触发黑流量拦截。',
+}
+
+const riskStrategy: Record<RiskMode, string> = {
+  normal: '策略：正常限流，不因连续秒杀直接封禁',
+  hot: '策略：高意向优先，库存紧张时优先进入订单链路',
+  bot: '策略：低熵脚本流量进入蜜罐/延迟队列',
 }
 
 const eventTabs = [
@@ -281,20 +287,23 @@ function computeConditionalEntropy(matrix: number[][]) {
 }
 
 function classifyEntropy(entropy: number): TrafficColor {
-  if (entropy < 0.5) return 'BLACK'
-  if (entropy < 1.5 || entropy > 3.5) return 'YELLOW'
+  if (entropy < 0.25) return 'BLACK'
+  if (entropy < 0.9 || entropy > 3.5) return 'YELLOW'
   return 'GREEN'
 }
 
-function explainEntropy(color: TrafficColor, entropy: number, repeatedCount: number) {
+function explainEntropy(color: TrafficColor, entropy: number, repeatedCount: number, mode: RiskMode, action: BehaviorAction) {
   if (color === 'BLACK') {
-    return `H=${entropy.toFixed(2)}，最近行为高度重复，转移路径几乎确定，判定为低熵黑流量`
+    return `H=${entropy.toFixed(2)}，脚本模式下路径固定且请求高频，判定为 BLACK`
   }
   if (color === 'YELLOW') {
+    if (mode === 'normal' && action === 'SECKILL') {
+      return `H=${entropy.toFixed(2)}，用户连续抢购属秒杀常见行为，仅标记观察，不拦截`
+    }
     return `H=${entropy.toFixed(2)}，行为路径偏单一，进入降级观察`
   }
   if (repeatedCount >= 3) {
-    return `H=${entropy.toFixed(2)}，出现重复点击但仍未低于黑流量阈值`
+    return `H=${entropy.toFixed(2)}，出现重复点击但仍在正常秒杀容忍范围`
   }
   return `H=${entropy.toFixed(2)}，行为路径多样，符合正常用户`
 }
@@ -430,10 +439,10 @@ export default function MallView() {
   const demoRevenue = orders.reduce((sum, order) => sum + Number(order.totalAmount ?? 0), 0)
   const intentScore = Math.min(
     98,
-    52 + behaviorLogs.length * 4 + cartCount * 8 + favoriteIds.length * 5 + seckillLogs * 7 + paidOrders * 4 + (riskMode === 'hot' ? 12 : 0),
+    52 + behaviorLogs.length * 3 + cartCount * 8 + favoriteIds.length * 5 + seckillLogs * 6 + paidOrders * 4 + (riskMode === 'hot' ? 18 : 0) - (riskMode === 'bot' ? 16 : 0),
   )
-  const conversionRate = Math.min(96, Math.round((cartCount + 1) * 10 + favoriteIds.length * 4 + behaviorLogs.length * 1.5))
-  const riskScore = Math.min(99, Math.round((yellowCount * 18 + blackCount * 35 + (riskMode === 'bot' ? 42 : 8))))
+  const conversionRate = Math.min(96, Math.round((cartCount + 1) * 10 + favoriteIds.length * 4 + seckillLogs * 6 + behaviorLogs.length))
+  const riskScore = Math.min(99, Math.round((yellowCount * 8 + blackCount * 35 + (riskMode === 'bot' ? 50 : riskMode === 'hot' ? 3 : 6))))
   const traceTone = riskScore > 55 ? 'red' : riskScore > 28 ? 'amber' : 'green'
 
   useEffect(() => {
@@ -519,10 +528,12 @@ export default function MallView() {
     const rawEntropy = computeConditionalEntropy(matrix)
     const entropy = Number(rawEntropy.toFixed(2))
     let color: TrafficColor = classifyEntropy(rawEntropy)
-    if (repeatedCount >= 4) color = 'BLACK'
-    const reason = explainEntropy(color, entropy, repeatedCount)
+    if (riskMode === 'normal' && action === 'SECKILL') color = repeatedCount >= 6 ? 'YELLOW' : 'GREEN'
+    if (riskMode === 'hot') color = color === 'BLACK' ? 'YELLOW' : 'GREEN'
+    if (riskMode === 'bot' && repeatedCount >= 3) color = 'BLACK'
+    const reason = explainEntropy(color, entropy, repeatedCount, riskMode, action)
     const latency = Math.round((riskMode === 'bot' ? 18 : 42) + Math.random() * 90)
-    const result = options?.result ?? (color === 'BLACK' ? 'BLOCKED' : action === 'SECKILL' ? 'CONVERTED' : 'CAPTURED')
+    const result = options?.result ?? (color === 'BLACK' && riskMode === 'bot' ? 'BLOCKED' : action === 'SECKILL' ? 'CONVERTED' : 'CAPTURED')
     const stockBefore = options?.stockBefore ?? product.availableStock
     const stockAfter = options?.stockAfter ?? product.availableStock
     const stage = buildStage(action, color, result)
@@ -621,7 +632,7 @@ export default function MallView() {
 
     const tracked = await trackBehavior('SECKILL', product, { stockBefore, stockAfter })
     if (tracked.result === 'BLOCKED') {
-      setOrderResult('普通用户出现高频重复秒杀：条件熵降为 BLACK，库存不变、订单不创建')
+      setOrderResult('脚本模式触发低熵 BLACK：库存不变、订单不创建，保护后端服务')
       setIsOrdering(false)
       return
     }
@@ -803,7 +814,11 @@ export default function MallView() {
                 <button
                   key={mode}
                   type="button"
-                  onClick={() => setRiskMode(mode)}
+                  onClick={() => {
+                    setRiskMode(mode)
+                    setHighlightedMetric(riskStrategy[mode])
+                    setOrderResult(`${riskLabel[mode]}已切换：${riskDescription[mode]}`)
+                  }}
                   className={`rounded-md border px-3 py-2 text-left text-xs transition ${
                     riskMode === mode
                       ? 'border-emerald-400 bg-emerald-400/10 text-emerald-100'
@@ -814,6 +829,10 @@ export default function MallView() {
                   <span className="mt-1 block text-[11px] text-slate-400">{riskDescription[mode]}</span>
                 </button>
               ))}
+            </div>
+            <div className="mt-3 rounded-md border border-slate-800 bg-slate-900 p-3">
+              <p className="text-xs font-medium text-slate-300">当前流量策略</p>
+              <p className="mt-1 text-xs leading-5 text-slate-400">{riskStrategy[riskMode]}</p>
             </div>
             <div className="mt-4 rounded-md border border-slate-800 bg-slate-900 p-3">
               <p className="text-xs font-medium text-slate-300">最近请求结果</p>
@@ -1081,12 +1100,12 @@ export default function MallView() {
             <h2 className="text-sm font-semibold text-slate-950">路演讲解链路</h2>
             <div className="mt-3 space-y-2 text-xs text-slate-600">
               {[
-                ['1', '用户浏览 / 收藏 / 加购，产生行为事件'],
-                ['2', 'Nginx 转发到 Gateway，统一入口鉴权'],
-                ['3', 'EntropyFilter 根据请求熵给流量染色'],
-                ['4', 'PID 自适应限流保护订单服务'],
-                ['5', 'Redis 原子扣库存，订单服务落库'],
-                ['6', 'BI 大屏展示转化、风险与流量趋势'],
+                ['1', 'Nginx 承接入口流量，静态资源与 API 分流'],
+                ['2', 'Gateway 通过 Nacos 路由到 goods / order / stock'],
+                ['3', 'Redis 承担库存、意愿分、熵矩阵等共享状态'],
+                ['4', '订单服务落库，RabbitMQ 用于异步削峰'],
+                ['5', 'EntropyFilter 只对异常脚本做分层保护'],
+                ['6', '管理员侧观察吞吐、实例、漏斗和风控结果'],
               ].map(([index, step]) => (
                 <div key={index} className="flex items-center gap-2">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-950 text-[10px] text-white">{index}</span>
@@ -1098,7 +1117,7 @@ export default function MallView() {
 
           <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold text-slate-950">条件熵转移矩阵</h2>
-            <p className="mt-1 text-xs leading-5 text-slate-500">行是上一次行为，列是下一次行为。重复点击会让矩阵集中到一条路径，H(Y|X) 下降并触发 BLACK。</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">行是上一次行为，列是下一次行为。连续抢购会进入观察，但只有脚本模式下的固定路径 + 高频请求才触发 BLACK。</p>
             <div className="mt-3 grid grid-cols-5 gap-1 text-center text-[10px]">
               <span />
               {entropyStates.map((state) => <span key={state} className="rounded bg-slate-100 px-1 py-1 text-slate-500">{state}</span>)}
